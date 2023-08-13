@@ -3,13 +3,7 @@ WHITE = 1
 DARKBLUE = 6
 GREEN = 5
 GREY = 15
-
-
-
-
-
-
-
+RASTERREGISTER = $d012 
 SID = $d400
 VIC2 = $d000
 VICMEMCTRL = $d018
@@ -59,21 +53,6 @@ mainloop
     lda #0
     sta waitingForInput
     jmp mainloop
-gamelogic
-    ;jsr moveFrog
-    ;jsr moveLogs
-    ;jsr moveCars
-    ; ;seperate out joystick reading and actual movement function
-    ;jsr calculatePosition
-    lda #0
-    sta frameCounter
-    jmp cont
-graphicsUpdate
-    ;jsr setWater
-    ;jsr drawLogs
-    ;jsr drawStreets
-    ;jsr drawCars
-    jmp cont2
 moveFrog ; what I want is to move the frog once every click of the joystick so register the command, set a flag to wait for the movement to occur set that flag to zero when mv was applied and
 ; then read the next input 
     lda waitingForInput
@@ -403,58 +382,23 @@ rasterIRQ
     lda $dc0d
     cli
     jmp $ea31
-rasterChecked
-    lda $d012
+rasterChecked 
+    lda RASTERREGISTER
     cmp #SCREENSTART
-    bne goalCheck
-    inc frameCounter
-    lda frameCounter
-    cmp #10
-    bne cont
-    jmp gamelogic
-cont
-    lda #RIVERIRQ
-    sta $d012
-    jmp cleanUp
-goalCheck
-    cmp #RIVERIRQ
-    bne riverCheck
-    lda #BLACK ; black
+    bne halfway
+    lda #BLACK
     sta $d021 
-    lda #BANKIRQ
-    sta $d012 
+    lda #120
+    clc
+    sta RASTERREGISTER
     jmp cleanUp
-riverCheck
-    cmp #BANKIRQ
-    bne riverBankCheck
-    lda #WHITE ; blue?
-    sta $d021 
-    lda #ENDOFSTREET
-    sta $d012
-    jmp cleanUp
-riverBankCheck
-    cmp #STREETIRQ
-    bne streetCheck
-    lda #DARKBLUE
-    sta $d021
-    lda #ENDOFSTREET
-    sta $d012 
-    jmp cleanUp
-streetCheck
-    cmp #ENDOFSTREET
-    bne startCheck
+halfway  
+    cmp #120
+    bne cleanUp
     lda #GREEN
     sta $d021 
-    lda #VBLANK
-    sta $d012
-    jmp cleanUp
-startCheck
-    cmp #VBLANK
-    bne cleanUp
-    lda #SCREENSTART
-    sta $d012 
-    jmp graphicsUpdate
-cont2
+    lda #SCREENSTART 
+    sta RASTERREGISTER
 cleanUp
     pla                                ;Y vom Stack
     tay
@@ -463,6 +407,7 @@ cleanUp
     pla                                ;Akku vom Stack
     cli
     rti 
+irqPosition !byte 123
 Logs 
     !byte $00,13,$00,20,$00,24,$01,12,$01,32,$01,34,$03,12,$03,54
 currentAnimationState 
