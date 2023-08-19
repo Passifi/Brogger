@@ -26,7 +26,7 @@ JOY1 = $dc00
     lda #7
     sta COLORRAM,x
     lda #35
-    inx
+    inx 
     sta SCREEN,x
     lda #9
     sta COLORRAM,x 
@@ -46,12 +46,17 @@ JOY1 = $dc00
     jsr prepareRasterInterrupt
    
 mainloop
+    ; Pull Input
+    ; Update Logical Positions 
+    ; Collision Detection
+    jsr drawCars
     lda JOY1
     cmp #127
     beq mainloop
     sta inputData
     lda #0
     sta waitingForInput
+    
     jmp mainloop
 moveFrog ; what I want is to move the frog once every click of the joystick so register the command, set a flag to wait for the movement to occur set that flag to zero when mv was applied and
 ; then read the next input 
@@ -95,6 +100,15 @@ clrStreetloop
     rts
     
 moveCars
+    lda carMovementCounter
+    clc
+    adc #30
+    sta carMovementCounter
+    bcs moveCar
+    rts 
+moveCar
+    lda #0
+    sta carMovementCounter
     ldx  #6
 moveCarLoop
     sec
@@ -386,6 +400,7 @@ rasterChecked
     lda RASTERREGISTER
     cmp #SCREENSTART
     bne halfway
+    jsr moveCars
     lda #BLACK
     sta $d021 
     lda #120
@@ -395,7 +410,7 @@ rasterChecked
 halfway  
     cmp #120
     bne cleanUp
-    lda #GREEN
+    lda #GREY
     sta $d021 
     lda #SCREENSTART 
     sta RASTERREGISTER
@@ -408,6 +423,7 @@ cleanUp
     cli
     rti 
 irqPosition !byte 123
+carMovementCounter !byte 0
 Logs 
     !byte $00,13,$00,20,$00,24,$01,12,$01,32,$01,34,$03,12,$03,54
 currentAnimationState 
