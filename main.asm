@@ -50,6 +50,7 @@ mainloop
     ; Update Logical Positions 
     ; Collision Detection
     jsr drawCars
+    jsr drawLogs
     lda JOY1
     cmp #127
     beq mainloop
@@ -98,7 +99,14 @@ clrStreetloop
     dex
     bne clrStreetloop
     rts
-    
+
+logicBlock 
+    jsr moveCars
+    jsr moveLogs
+    rts
+
+
+
 moveCars
     lda carMovementCounter
     clc
@@ -112,7 +120,8 @@ moveCar
     ldx  #6
 moveCarLoop
     sec
-    lda carsFirstLine-1,x 
+    lda carsFirstLine-1,x
+    sta carsOldPosition-1,x
     sbc #1 
     cmp #255
     bne next
@@ -125,9 +134,27 @@ next
     
     
 drawCars 
+    
+    ldy #2
+eraseCarsLoop
+    lda carsOldPosition-1,y
+    tax 
+    lda #32 
+    sta SCREEN+40*14,x 
+    lda carsOldPosition+1,y
+    tax 
+    lda #32 
+    sta SCREEN+40*16,x 
+    lda carsOldPosition+3,y
+    tax 
+    lda #32 
+    sta SCREEN+40*18,x 
+    dey
+    bne eraseCarsLoop
     ldy #2
 carLoop
     ;first Line isc
+    
     lda carsFirstLine-1,y  
     tax
     lda #33
@@ -167,9 +194,17 @@ colorLoop
     bne colorLoop
     sta COLORRAM,x
     rts
-    
 
-moveLogs 
+moveLogs
+    lda logMovementCounter
+    clc 
+    adc #10
+    bcs moveOkay
+    sta logMovementCounter
+    rts 
+moveOkay
+    lda #0
+    sta logMovementCounter
     ldx #0
 mvLoop
     clc
@@ -400,7 +435,7 @@ rasterChecked
     lda RASTERREGISTER
     cmp #SCREENSTART
     bne halfway
-    jsr moveCars
+    jsr logicBlock
     lda #BLACK
     sta $d021 
     lda #120
@@ -424,6 +459,7 @@ cleanUp
     rti 
 irqPosition !byte 123
 carMovementCounter !byte 0
+logMovementCounter !byte 0
 Logs 
     !byte $00,13,$00,20,$00,24,$01,12,$01,32,$01,34,$03,12,$03,54
 currentAnimationState 
@@ -438,6 +474,8 @@ carsSecondLine
     !byte 6,15
 carsThirdLine
     !byte 15,30
+carsOldPosition
+    !byte 0,0,0,0,0,0
 waitingForInput
     !byte 1
 inputData 
