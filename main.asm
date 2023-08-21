@@ -41,7 +41,6 @@ JOY1 = $dc00
     lda #7
     sta COLORRAM,x 
     jsr colorLogArea
-    jsr setWater
     jsr drawLogs
     jsr prepareRasterInterrupt
    
@@ -187,7 +186,7 @@ streetLoop
     
 colorLogArea 
     ldx #200
-    lda #9
+    lda #8
 colorLoop
     sta COLORRAM,x 
     dex 
@@ -209,6 +208,7 @@ moveOkay
 mvLoop
     clc
     lda Logs+1,x 
+    sta oldLogs+1,x 
     adc #1
     cmp #40
     bne strValue
@@ -291,7 +291,7 @@ calculatePosition
 
 !zone drawing    
 
-setCharacter ; pass in x and y position in the x and y register
+setCharacter ; pass in x and y position in the x and y register 
     tya 
     asl 
     asl
@@ -310,10 +310,16 @@ setCharacter ; pass in x and y position in the x and y register
     stx $fb
     adc $fb
     tax
-    lda #34
+    lda charToSet
     sta SCREEN,x 
+    cmp #34
+    beq setLogEnd
+    sta SCREEN+1,x
+    rts 
+setLogEnd
     lda #36
     sta SCREEN+1,x
+    
     rts
 
 drawLogs 
@@ -321,10 +327,19 @@ drawLogs
 drawLoop
     txa
     pha 
+        lda oldLogs,x
+        tay
+        lda oldLogs+1,x
+        tax
+        lda #32
+        sta charToSet
+        jsr setCharacter 
         lda Logs,x
         tay
         lda Logs+1,x
         tax
+        lda #34
+        sta charToSet
         jsr setCharacter 
     pla 
     tax
@@ -436,7 +451,7 @@ rasterChecked
     cmp #SCREENSTART
     bne halfway
     jsr logicBlock
-    lda #BLACK
+    lda #DARKBLUE
     sta $d021 
     lda #120
     clc
@@ -457,11 +472,15 @@ cleanUp
     pla                                ;Akku vom Stack
     cli
     rti 
+charToSet 
+    !byte $00
 irqPosition !byte 123
 carMovementCounter !byte 0
 logMovementCounter !byte 0
 Logs 
     !byte $00,13,$00,20,$00,24,$01,12,$01,32,$01,34,$03,12,$03,54
+oldLogs 
+    !byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 currentAnimationState 
     !byte $00
 frameCounter
